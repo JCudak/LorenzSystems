@@ -93,21 +93,20 @@ def main():
     ]
 
     for system in systems:
-        print(f"Running sensitivity analysis for {system['name']} system")
+        print(f"Running sensitivity analysis for {system['name']} system\n")
 
         sobol_indices, morris_indices = perform_sensitivity_analysis(
             system['system_func'],
             system['initial_state'],
             system['problem']
         )
-
         print(f"Sobol Indices for {system['name']} System:")
         print(f"First-order indices: {sobol_indices['S1']}")
-        print(f"Total-order indices: {sobol_indices['ST']}")
+        print(f"Total-order indices: {sobol_indices['ST']}\n")
 
         print(f"Morris Analysis Results for {system['name']} System:")
         print(f"mu*: {morris_indices['mu_star']}")
-        print(f"sigma: {morris_indices['sigma']}")
+        print(f"sigma: {morris_indices['sigma']}\n")
 
         solution = solve_system(system['system_func'], system['initial_state'], (10.0, 8.0 / 3.0, 28.0))
         plot_3d_solution(solution, title=f"3D Plot of the {system['name']} System")
