@@ -8,7 +8,8 @@ from SALib.analyze.morris import analyze as morris_analyze
 
 def solve_system(system_func, initial_state, params, t_span=(0, 50), num_points=10000):
     t_eval = np.linspace(t_span[0], t_span[1], num_points)
-    solution = solve_ivp(system_func, t_span, initial_state, args=params, t_eval=t_eval)
+    solution = solve_ivp(system_func, t_span, initial_state, args=params, t_eval=t_eval, method='LSODA', min_step=0.00001)
+
     return solution
 
 
@@ -114,20 +115,20 @@ def main():
         {
             "name": "Chen",
             "system_func": chen_system,
-            "initial_state": [1.5, 1.5, 1.5],
+            "initial_state": [1.0, 1.0, 1.0],
             "problem": create_problem(3, ['alpha', 'beta', 'gamma'], [[4.5, 16.0], [0.5, 5.0], [16.0, 34.0]])
         },
         {
             "name": "Lu",
             "system_func": lu_system,
-            "initial_state": [1.5, 1.5, 1.5],
+            "initial_state": [1.0, 1.0, 1.0],
             "problem": create_problem(3, ['alpha', 'beta', 'gamma'], [[20.0, 40.0], [0.5, 5.0], [5.0, 30.0]])
         },
         {
             "name": "Unified",
             "system_func": unified_system,
-            "initial_state": [1.5, 1.5, 1.5],
-            "problem": create_problem(3, ['alpha', 'beta', 'gamma'], [[-2.0, 2.0], [0, 0], [0, 0]])
+            "initial_state": [1.0, 1.0, 1.0],
+            "problem": create_problem(3, ['alpha', 'beta', 'gamma'], [[-2.0, 2.0], [0, 1], [0, 1]])
         }
     ]
 
