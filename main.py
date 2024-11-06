@@ -115,7 +115,7 @@ def main():
             "name": "Chen",
             "system_func": chen_system,
             "initial_state": [1.5, 1.5, 1.5],
-            "problem": create_problem(3, ['alpha', 'beta', 'gamma'], [[0.5, 20.0], [0.5, 5.0], [10.0, 35.0]])
+            "problem": create_problem(3, ['alpha', 'beta', 'gamma'], [[4.5, 16.0], [0.5, 5.0], [16.0, 34.0]])
         },
         {
             "name": "Lu",
