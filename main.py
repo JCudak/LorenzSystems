@@ -1,27 +1,16 @@
 import numpy as np
 from scipy.integrate import solve_ivp
 import matplotlib.pyplot as plt
-from SALib.sample import sobol
+from SALib.sample import sobol, morris
 from SALib.analyze.sobol import analyze as sobol_analyze
+from SALib.analyze.morris import analyze as morris_analyze
 
-def lorenz_system(t, state, sigma, beta, rho):
-    x, y, z = state
-    dx_dt = sigma * (y - x)
-    dy_dt = x * (rho - z) - y
-    dz_dt = x * y - beta * z
-    return [dx_dt, dy_dt, dz_dt]
-
-def yang_system(t, state, alpha, beta, gamma):
-    x, y, z = state
-    dx_dt = alpha * (y - x)
-    dy_dt = gamma * x - x * z
-    dz_dt = x * y - beta * z
-    return [dx_dt, dy_dt, dz_dt]
 
 def solve_system(system_func, initial_state, params, t_span=(0, 50), num_points=10000):
     t_eval = np.linspace(t_span[0], t_span[1], num_points)
     solution = solve_ivp(system_func, t_span, initial_state, args=params, t_eval=t_eval)
     return solution
+
 
 def plot_3d_solution(solution, title='3D Plot of System', colors='blue'):
     fig = plt.figure(figsize=(10, 7))
@@ -33,54 +22,96 @@ def plot_3d_solution(solution, title='3D Plot of System', colors='blue'):
     ax.set_zlabel('Z')
     plt.show()
 
-initial_state_lorenz = [1.0, 1.0, 1.0]
-params_lorenz = (10.0, 8.0 / 3.0, 28.0)  # sigma, beta, rho
 
-initial_state_yang = [1.5, 1.5, 1.5]
-params_yang = (10.0, 8.0 / 3.0, 16.0)  # alpha, beta, gamma
-
-solution_lorenz = solve_system(lorenz_system, initial_state_lorenz, params_lorenz)
-plot_3d_solution(solution_lorenz, title='3D Plot of the Lorenz System')
-
-solution_yang = solve_system(yang_system, initial_state_yang, params_yang)
-plot_3d_solution(solution_yang, title='3D Plot of the Yang System', colors='green')
+def lorenz_system(t, state, sigma, beta, rho):
+    x, y, z = state
+    dx_dt = sigma * (y - x)
+    dy_dt = x * (rho - z) - y
+    dz_dt = x * y - beta * z
+    return [dx_dt, dy_dt, dz_dt]
 
 
-problem_lorenz = {
-    'num_vars': 3,
-    'names': ['sigma', 'beta', 'rho'],
-    'bounds': [[0.5, 20.0], [0.5, 5.0], [20.0, 50.0]]  # Zakresy parametrów
-}
+def yang_system(t, state, alpha, beta, gamma):
+    x, y, z = state
+    dx_dt = alpha * (y - x)
+    dy_dt = gamma * x - x * z
+    dz_dt = x * y - beta * z
+    return [dx_dt, dy_dt, dz_dt]
 
-problem_yang = {
-    'num_vars': 3,
-    'names': ['alpha', 'beta', 'gamma'],
-    'bounds': [[0.5, 20.0], [0.5, 5.0], [5.0, 30.0]]  # Zakresy parametrów
-}
 
-param_values_lorenz = sobol.sample(problem_lorenz, 32)
-param_values_yang = sobol.sample(problem_yang, 32)
+def create_problem(num_vars, names, bounds):
+    return {
+        'num_vars': num_vars,
+        'names': names,
+        'bounds': bounds
+    }
+
 
 def run_simulation_for_samples(system_func, param_values, initial_state):
     results = []
     for params in param_values:
-        print(f"Solving for parameters: {params}")
         solution = solve_system(system_func, initial_state, tuple(params))
-        results.append(solution.y[0, -1])  # Zapisujemy np. końcową wartość x
+        results.append(solution.y[0, -1])  # Record the final value of x (or another relevant output)
     return np.array(results)
 
-results_lorenz = run_simulation_for_samples(lorenz_system, param_values_lorenz, initial_state_lorenz)
 
-results_yang = run_simulation_for_samples(yang_system, param_values_yang, initial_state_yang)
+def sobol_analysis(problem, results):
+    return sobol_analyze(problem, results)
 
-sobol_indices_lorenz = sobol_analyze(problem_lorenz, results_lorenz)
 
-sobol_indices_yang = sobol_analyze(problem_yang, results_yang)
+def morris_analysis(problem, param_values, results, num_levels=4, num_resamples=100):
+    return morris_analyze(problem, param_values, results, num_levels=num_levels, num_resamples=num_resamples)
 
-print("Sobol Indices for Lorenz System:")
-print(f"First-order indices: {sobol_indices_lorenz['S1']}")
-print(f"Total-order indices: {sobol_indices_lorenz['ST']}")
 
-print("\nSobol Indices for Yang System:")
-print(f"First-order indices: {sobol_indices_yang['S1']}")
-print(f"Total-order indices: {sobol_indices_yang['ST']}")
+def perform_sensitivity_analysis(system_func, initial_state, problem, num_samples=32):
+
+    param_values_sobol = sobol.sample(problem, num_samples)
+    results_sobol = run_simulation_for_samples(system_func, param_values_sobol, initial_state)
+    sobol_indices = sobol_analysis(problem, results_sobol)
+
+    param_values_morris = morris.sample(problem, num_samples)
+    results_morris = run_simulation_for_samples(system_func, param_values_morris, initial_state)
+    morris_indices = morris_analysis(problem, param_values_morris, results_morris)
+
+    return sobol_indices, morris_indices
+
+
+def main():
+    systems = [
+        {
+            "name": "Lorenz",
+            "system_func": lorenz_system,
+            "initial_state": [1.0, 1.0, 1.0],
+            "problem": create_problem(3, ['sigma', 'beta', 'rho'], [[0.5, 20.0], [0.5, 5.0], [20.0, 50.0]])
+        },
+        {
+            "name": "Yang",
+            "system_func": yang_system,
+            "initial_state": [1.5, 1.5, 1.5],
+            "problem": create_problem(3, ['alpha', 'beta', 'gamma'], [[0.5, 20.0], [0.5, 5.0], [5.0, 30.0]])
+        }
+    ]
+
+    for system in systems:
+        print(f"Running sensitivity analysis for {system['name']} system")
+
+        sobol_indices, morris_indices = perform_sensitivity_analysis(
+            system['system_func'],
+            system['initial_state'],
+            system['problem']
+        )
+
+        print(f"Sobol Indices for {system['name']} System:")
+        print(f"First-order indices: {sobol_indices['S1']}")
+        print(f"Total-order indices: {sobol_indices['ST']}")
+
+        print(f"Morris Analysis Results for {system['name']} System:")
+        print(f"mu*: {morris_indices['mu_star']}")
+        print(f"sigma: {morris_indices['sigma']}")
+
+        solution = solve_system(system['system_func'], system['initial_state'], (10.0, 8.0 / 3.0, 28.0))
+        plot_3d_solution(solution, title=f"3D Plot of the {system['name']} System")
+
+
+if __name__ == "__main__":
+    main()
