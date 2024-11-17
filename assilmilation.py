@@ -3,13 +3,71 @@ import pypesto
 
 from systems import *
 from plotting import *
+from scipy.integrate import solve_ivp
 
 
 def rms_error(model_solution, true_solution):
     return np.sqrt(np.mean((model_solution - true_solution) ** 2))
 
+
+import numpy as np
+import pypesto
+from scipy.integrate import solve_ivp
+from pypesto import optimize
+
+
 def assimilate_data(system_func, initial_state, observed_data, t_span, initial_params, bounds):
-    pass
+    """
+    Assimilate data into the model by optimizing the parameters.
+
+    system_func: function
+        The model system function to solve.
+    initial_state: list
+        Initial conditions for the system.
+    observed_data: np.array
+        The observed data to fit the model to.
+    t_span: tuple
+        Time interval for the model.
+    initial_params: tuple
+        Initial guess for the model parameters.
+    bounds: list
+        Bounds for the model parameters.
+
+    Returns:
+    np.array
+        Optimized parameters.
+    """
+
+    # Define the model's differential equation system as a wrapper for solve_ivp
+    def model(t, y, params):
+        return system_func(t, y, *params)
+
+    def objective_fun(params):
+        # Solve the system with the current parameters
+        solution = solve_ivp(model, t_span, initial_state, args=(params,),
+                             t_eval=np.linspace(t_span[0], t_span[1], len(observed_data)))
+        model_output = solution.y[0]  # We assume we are fitting the first dynamic variable (x)
+
+        return rms_error(model_output, observed_data)
+
+    # Define the objective function for pypesto
+    objective = pypesto.Objective(fun=objective_fun)
+
+    # Convert bounds into the correct shape for pypesto
+    lb = np.array([b[0] for b in bounds])  # lower bounds
+    ub = np.array([b[1] for b in bounds])  # upper bounds
+
+    # Create the optimization problem
+    problem = pypesto.Problem(objective=objective, lb=lb, ub=ub)
+
+    # Set up the optimizer
+    optimizer = optimize.ScipyOptimizer()
+
+    # Perform optimization to minimize the objective function
+    result = optimize.minimize(problem=problem, optimizer=optimizer, n_starts=10, filename=None)
+
+    # Return the optimized parameters
+    return result.optimize_result[0].x  # Return the best-fit parameters from the optimization result
 
 
 if __name__ == "__main__":
