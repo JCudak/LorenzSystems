@@ -60,9 +60,9 @@ def main():
         {
             "name": "Chen",
             "system_func": chen_system,
-            "solver_params": ('LSODA', 0.00001),
-            "base_params": [(35, 3, 28), (30, 2.5, 25)],
-            "bounds": [(20, 40), (2, 5), (20, 35)],
+            "solver_params": ('LSODA', 0.000000001),
+            "base_params": [(34.5, 2.7, 28.0)],
+            "bounds": [(34.0, 36.0), (2.5, 3.5), (27.0, 29.0)],
             "initial_state": [1.0, 1.0, 1.0]
         },
         {
