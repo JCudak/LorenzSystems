@@ -68,9 +68,9 @@ def main():
         {
             "name": "Lu",
             "system_func": lu_system,
-            "solver_params": ('LSODA', 0.00001),
+            "solver_params": None,
             "base_params": [(36, 3, 20), (32, 2.5, 18)],
-            "bounds": [(20, 40), (2, 5), (10, 25)],
+            "bounds": [(32.0, 39.0), (1.5, 5.5), (15.0, 24.5)],
             "initial_state": [1.0, 1.0, 1.0]
         }
     ]
