@@ -10,14 +10,17 @@ def rms_error(model_solution, true_solution):
     return np.sqrt(np.mean((model_solution - true_solution) ** 2))
 
 
-def assimilate_data(system_func, initial_state, observed_data, t_span, bounds):
+def assimilate_data(system_func, initial_state, observed_data, t_span, bounds, solver_params):
     def model(t, y, params):
         return system_func(t, y, *params)
 
     def objective_fun(params):
         t_eval = np.linspace(t_span[0], t_span[1], len(observed_data))
-        solution = solve_ivp(model, t_span, initial_state, args=(params,),
-                             t_eval=t_eval, method='LSODA', min_step=0.00001)
+        if solver_params is not None:
+            solution = solve_ivp(model, t_span, initial_state, args=(params,),
+                                t_eval=t_eval, method=solver_params[0], min_step=solver_params[1])
+        else:
+            solution = solve_ivp(model, t_span, initial_state, args=(params,), t_eval=t_eval)
         model_output = solution.y[0]
 
         return rms_error(model_output, observed_data)
@@ -36,11 +39,12 @@ def assimilate_data(system_func, initial_state, observed_data, t_span, bounds):
     return result.optimize_result[0].x
 
 
-if __name__ == "__main__":
+def main():
     systems = [
         {
             "name": "Lorenz",
             "system_func": lorenz_system,
+            "solver_params": None,
             "base_params": [(10.0, 8.0 / 3.0, 28.0), (9.5, 2.5, 25)],
             "bounds": [(5, 20), (0.5, 5), (20, 50)],
             "initial_state": [1.0, 1.0, 1.0]
@@ -48,6 +52,7 @@ if __name__ == "__main__":
         {
             "name": "Yang",
             "system_func": yang_system,
+            "solver_params": None,
             "base_params": [(10, 8. / 3., 16), (9, 2.5, 15)],
             "bounds": [(5, 20), (2, 5), (10, 20)],
             "initial_state": [1.5, 1.5, 1.5]
@@ -55,6 +60,7 @@ if __name__ == "__main__":
         {
             "name": "Chen",
             "system_func": chen_system,
+            "solver_params": ('LSODA', 0.00001),
             "base_params": [(35, 3, 28), (30, 2.5, 25)],
             "bounds": [(20, 40), (2, 5), (20, 35)],
             "initial_state": [1.0, 1.0, 1.0]
@@ -62,6 +68,7 @@ if __name__ == "__main__":
         {
             "name": "Lu",
             "system_func": lu_system,
+            "solver_params": ('LSODA', 0.00001),
             "base_params": [(36, 3, 20), (32, 2.5, 18)],
             "bounds": [(20, 40), (2, 5), (10, 25)],
             "initial_state": [1.0, 1.0, 1.0]
@@ -71,7 +78,7 @@ if __name__ == "__main__":
     for system in systems:
         print(f"Processing {system['name']} system")
         for i in range(len(system["base_params"])):
-            base_solution = solve_system(system["system_func"], system["base_params"][i], system["initial_state"])
+            base_solution = solve_system(system["system_func"], system["initial_state"], system["base_params"][i])
 
             t_train_span = (10, 30)
             train_indices = (base_solution.t >= t_train_span[0]) & (base_solution.t <= t_train_span[1])
@@ -79,10 +86,10 @@ if __name__ == "__main__":
             training_times = base_solution.t[train_indices]
 
             fitted_params = assimilate_data(system["system_func"], system["initial_state"], training_data[0],
-                                            t_train_span, system["bounds"])
+                                            t_train_span, system["bounds"], system['solver_params'])
             print(f"Fitted Parameters for {system['name']}: {fitted_params}")
 
-            fitted_solution = solve_system(system["system_func"], fitted_params, system["initial_state"])
+            fitted_solution = solve_system(system["system_func"], system["initial_state"], fitted_params)
 
             rms_forward = rms_error(fitted_solution.y[:, fitted_solution.t >= 30],
                                     base_solution.y[:, base_solution.t >= 30])
@@ -95,3 +102,7 @@ if __name__ == "__main__":
                               f"{system['name']} - x Trajectory")
             plot_3d_solution(base_solution, title=f"{system['name']} - Base Model", colors="blue")
             plot_3d_solution(fitted_solution, title=f"{system['name']} - Fitted Model", colors="orange")
+
+
+if __name__ == "__main__":
+    main()
