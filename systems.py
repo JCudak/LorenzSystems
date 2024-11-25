@@ -19,7 +19,7 @@ def yang_system(t, state, alpha, beta, gamma):
 def chen_system(t, state, alpha, beta, gamma):
     x, y, z = state
     dx_dt = alpha*(y - x)
-    dy_dt = (gamma - alpha)*x - x*z + gamma*y
+    dy_dt = (gamma - alpha - z)*x + gamma*y
     dz_dt = x*y - beta*z
     return [dx_dt, dy_dt, dz_dt]
 
