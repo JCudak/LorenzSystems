@@ -8,6 +8,26 @@ def lorenz_system(t, state, sigma, beta, rho):
     dz_dt = x * y - beta * z
     return [dx_dt, dy_dt, dz_dt]
 
+def disturbed_lorenz_system(t, state, sigma, beta, rho, eps, delta, ni):
+    xv, yv, zv, xh, yh, zh = state
+
+    dxv_dt = sigma * (yv - xv) + eps*zh
+    dyv_dt = xv * (rho - zv) - yv
+    dzv_dt = xv*yv - beta*zv + delta*(xh + ni)
+
+    dxh_dt = sigma * (yh - xh)
+    dyh_dt = xh * (rho - zh) - yh
+    dzh_dt = xh * yh - beta * zh
+
+    return [dxv_dt, dyv_dt, dzv_dt, dxh_dt, dyh_dt, dzh_dt]
+
+
+def disturption_set_disturbed_lorenz_system(sigma, beta, rho):
+    def inner(t, state, eps, delta, ni):
+        return disturbed_lorenz_system(t, state, sigma, beta, rho, eps, delta, ni)
+
+    return inner
+
 
 def yang_system(t, state, alpha, beta, gamma):
     x, y, z = state

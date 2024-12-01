@@ -41,60 +41,77 @@ def assimilate_data(system_func, initial_state, observed_data, t_span, bounds, s
 
 def main():
     systems = [
+        # {
+        #     "name": "Lorenz",
+        #     "ground_truth_func": lorenz_system,
+        #     "solver_params": None,
+        #     "base_params": [(10.0, 8.0 / 3.0, 28.0), (9.5, 2.5, 25)],
+        #     "bounds": [(5, 20), (0.5, 5), (20, 50)],
+        #     "gt_initial_state": [1.0, 1.0, 1.0]
+        # },
+        # {
+        #     "name": "Yang",
+        #     "ground_truth_func": yang_system,
+        #     "solver_params": None,
+        #     "base_params": [(10, 8. / 3., 16), (9, 2.5, 15)],
+        #     "bounds": [(5, 20), (2, 5), (10, 20)],
+        #     "gt_initial_state": [1.5, 1.5, 1.5]
+        # },
+        # {
+        #     "name": "Chen",
+        #     "ground_truth_func": chen_system,
+        #     "solver_params": None,
+        #     "base_params": [(34.5, 2.7, 28.0), (34.55, 2.8, 29.0)],
+        #     "bounds": [(33.0, 38.0), (2.0, 5.5), (26.0, 31.0)],
+        #     "gt_initial_state": [1.0, 1.0, 1.0]
+        # },
+        # {
+        #     "name": "Lu",
+        #     "ground_truth_func": lu_system,
+        #     "solver_params": None,
+        #     "base_params": [(36, 3, 20), (32, 2.5, 18)],
+        #     "bounds": [(32.0, 39.0), (1.5, 5.5), (15.0, 24.5)],
+        #     "gt_initial_state": [1.0, 1.0, 1.0]
+        # },
         {
-            "name": "Lorenz",
-            "system_func": lorenz_system,
-            "solver_params": None,
-            "base_params": [(10.0, 8.0 / 3.0, 28.0), (9.5, 2.5, 25)],
-            "bounds": [(5, 20), (0.5, 5), (20, 50)],
-            "initial_state": [1.0, 1.0, 1.0]
-        },
-        {
-            "name": "Yang",
-            "system_func": yang_system,
-            "solver_params": None,
-            "base_params": [(10, 8. / 3., 16), (9, 2.5, 15)],
-            "bounds": [(5, 20), (2, 5), (10, 20)],
-            "initial_state": [1.5, 1.5, 1.5]
-        },
-        {
-            "name": "Chen",
-            "system_func": chen_system,
-            "solver_params": None,
-            "base_params": [(34.5, 2.7, 28.0), (34.55, 2.8, 29.0)],
-            "bounds": [(33.0, 38.0), (2.0, 5.5), (26.0, 31.0)],
-            "initial_state": [1.0, 1.0, 1.0]
-        },
-        {
-            "name": "Lu",
-            "system_func": lu_system,
-            "solver_params": None,
-            "base_params": [(36, 3, 20), (32, 2.5, 18)],
-            "bounds": [(32.0, 39.0), (1.5, 5.5), (15.0, 24.5)],
-            "initial_state": [1.0, 1.0, 1.0]
+            "name": "Distorded Lorenz System",
+            "ground_truth_func": disturption_set_disturbed_lorenz_system(10.0, 28.0, 8/3),
+            "surrogate_func": lorenz_system,
+            "base_params": [(1.0, 5.0, 1.0), (1.5, 4.5, 0.1)],
+            "bounds": [[0.5, 2.0], [3.0, 8.0], [0.2, 3.0]],
+            "gt_initial_state": [15.0, 1.0, 1.0, 1.0, 2.0, 5.0],
+            "surrogate_state_len": 3,
         }
     ]
 
     for system in systems:
         print(f"Processing {system['name']} system")
         for i in range(len(system["base_params"])):
-            base_solution = solve_system(system["system_func"], system["initial_state"], system["base_params"][i])
+            ground_truth_func = system['ground_truth_func']
+            to_train_func = system.get('surrogate_func', ground_truth_func)
 
-            t_train_span = (10, 30)
+            gt_initial_state = system['gt_initial_state']
+            surrogate_state_len = system.get('surrogate_state_len', len(gt_initial_state))
+            initial_state = gt_initial_state[:surrogate_state_len]
+
+
+            base_solution = solve_system(ground_truth_func, gt_initial_state, system["base_params"][i])
+
+            t_train_span = (30, 50)
             train_indices = (base_solution.t >= t_train_span[0]) & (base_solution.t <= t_train_span[1])
             training_data = base_solution.y[:, train_indices]
             training_times = base_solution.t[train_indices]
 
-            fitted_params = assimilate_data(system["system_func"], system["initial_state"], training_data[0],
-                                            t_train_span, system["bounds"], system['solver_params'])
+            fitted_params = assimilate_data(to_train_func, initial_state, training_data[0],
+                                            t_train_span, system["bounds"], system.get('solver_params'))
             print(f"Fitted Parameters for {system['name']}: {fitted_params}")
 
-            fitted_solution = solve_system(system["system_func"], system["initial_state"], fitted_params)
+            fitted_solution = solve_system(to_train_func, initial_state, fitted_params)
 
             rms_forward = rms_error(fitted_solution.y[:, fitted_solution.t >= 30],
-                                    base_solution.y[:, base_solution.t >= 30])
+                                    base_solution.y[:surrogate_state_len, base_solution.t >= 30])
             rms_backward = rms_error(fitted_solution.y[:, fitted_solution.t <= 10],
-                                     base_solution.y[:, base_solution.t <= 10])
+                                     base_solution.y[:surrogate_state_len, base_solution.t <= 10])
             print(f"RMS Forward (30-50): {rms_forward}")
             print(f"RMS Backward (0-10): {rms_backward}")
 
