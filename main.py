@@ -45,40 +45,12 @@ def perform_sensitivity_analysis(system_func, initial_state, problem, num_sample
 def main():
     systems = [
         {
-            "name": "Lorenz",
-            "system_func": lorenz_system,
-            "initial_state": [1.0, 1.0, 1.0],
-            "problem": create_problem(3, ['sigma', 'beta', 'rho'], [[0.5, 20.0], [0.5, 5.0], [20.0, 50.0]]),
-            "params": (10.0, 8.0 / 3.0, 28.0)
+            "name": "Disturbed Lorenz",
+            "system_func": disturption_set_disturbed_lorenz_system(10, 28, 8/3),
+            "initial_state": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+            "problem": create_problem(3, ['eps', 'delta', 'ni'], [[0.5, 2.0], [3.0, 8.0], [0.2, 3.0]]),
+            "params": (1.0, 5.0, 1.0)
         },
-        {
-            "name": "Yang",
-            "system_func": yang_system,
-            "initial_state": [1.5, 1.5, 1.5],
-            "problem": create_problem(3, ['alpha', 'beta', 'gamma'], [[0.5, 20.0], [0.5, 5.0], [5.0, 30.0]]),
-            "params": (10.0, 8.0/3.0, 16.0)
-        },
-        {
-            "name": "Chen",
-            "system_func": chen_system,
-            "initial_state": [1.0, 1.0, 1.0],
-            "problem": create_problem(3, ['alpha', 'beta', 'gamma'], [[4.5, 16.0], [0.5, 5.0], [16.0, 34.0]]),
-            "params": (35.0, 3.0, 28.0)
-        },
-        {
-            "name": "Lu",
-            "system_func": lu_system,
-            "initial_state": [1.0, 1.0, 1.0],
-            "problem": create_problem(3, ['alpha', 'beta', 'gamma'], [[20.0, 40.0], [0.5, 5.0], [5.0, 30.0]]),
-            "params": (36.0, 3.0, 20.0)
-        },
-        {
-            "name": "Unified",
-            "system_func": unified_system,
-            "initial_state": [1.0, 1.0, 1.0],
-            "problem": create_problem(3, ['alpha', 'beta', 'gamma'], [[-2.0, 2.0], [0, 1], [0, 1]]),
-            "params": (0.1, 0.1, 0.1)
-        }
     ]
 
     for system in systems:

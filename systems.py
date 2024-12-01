@@ -22,6 +22,13 @@ def disturbed_lorenz_system(t, state, sigma, beta, rho, eps, delta, ni):
     return [dxv_dt, dyv_dt, dzv_dt, dxh_dt, dyh_dt, dzh_dt]
 
 
+def three_parameter_disturbed_lorenz_system(sigma, beta, rho):
+    def inner(t, state, eps, delta, ni):
+        return disturbed_lorenz_system(t, state, sigma, beta, rho, eps, delta, ni)
+
+    return inner
+
+
 def yang_system(t, state, alpha, beta, gamma):
     x, y, z = state
     dx_dt = alpha * (y - x)
