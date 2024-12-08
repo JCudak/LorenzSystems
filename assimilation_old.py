@@ -16,10 +16,7 @@ def calculate_rms_over_time(base_solution, fitted_solution):
     Each RMS value is computed for the corresponding time step.
     """
     # Difference between base and fitted solutions
-    if base_solution.shape[0] == 3 or fitted_solution.shape[0] == 3:
-        differences = base_solution[:3] - fitted_solution[:3]
-    else:
-        differences = base_solution - fitted_solution
+    differences = base_solution - fitted_solution
     # RMS calculated across variables (rows) for each time step (columns)
     rms_values = np.sqrt(np.mean(differences ** 2, axis=0))
     return rms_values
@@ -56,38 +53,38 @@ def assimilate_data(system_func, initial_state, observed_data, t_span, bounds, s
 
 def main():
     systems = [
-        # {
-        #     "name": "Lorenz",
-        #     "ground_truth_func": lorenz_system,
-        #     "solver_params": None,
-        #     "base_params": [(10.0, 8.0 / 3.0, 28.0), (9.9, 2.5, 27.5)],
-        #     "bounds": [(5, 20), (0.5, 5), (20, 50)],
-        #     "gt_initial_state": [1.0, 1.0, 1.0]
-        # },
-        # {
-        #     "name": "Yang",
-        #     "ground_truth_func": yang_system,
-        #     "solver_params": None,
-        #     "base_params": [(10, 8. / 3., 16), (9.9, 2.5, 15.9)],
-        #     "bounds": [(5, 20), (2, 5), (10, 20)],
-        #     "gt_initial_state": [1.5, 1.5, 1.5]
-        # },
-        # {
-        #     "name": "Chen",
-        #     "ground_truth_func": chen_system,
-        #     "solver_params": None,
-        #     "base_params": [(34.5, 2.7, 28.0), (34.55, 2.8, 29.0)],
-        #     "bounds": [(33.0, 38.0), (2.0, 5.5), (26.0, 31.0)],
-        #     "gt_initial_state": [1.0, 1.0, 1.0]
-        # },
-        # {
-        #     "name": "Lu",
-        #     "ground_truth_func": lu_system,
-        #     "solver_params": None,
-        #     "base_params": [(36, 3, 20), (35.5, 2.5, 19.5)],
-        #     "bounds": [(32.0, 39.0), (1.5, 5.5), (15.0, 24.5)],
-        #     "gt_initial_state": [1.0, 1.0, 1.0]
-        # },
+        {
+            "name": "Lorenz",
+            "ground_truth_func": lorenz_system,
+            "solver_params": None,
+            "base_params": [(10.0, 8.0 / 3.0, 28.0), (9.9, 2.5, 27.5)],
+            "bounds": [(5, 20), (0.5, 5), (20, 50)],
+            "gt_initial_state": [1.0, 1.0, 1.0]
+        },
+        {
+            "name": "Yang",
+            "ground_truth_func": yang_system,
+            "solver_params": None,
+            "base_params": [(10, 8. / 3., 16), (9.9, 2.5, 15.9)],
+            "bounds": [(5, 20), (2, 5), (10, 20)],
+            "gt_initial_state": [1.5, 1.5, 1.5]
+        },
+        {
+            "name": "Chen",
+            "ground_truth_func": chen_system,
+            "solver_params": None,
+            "base_params": [(34.5, 2.7, 28.0), (34.55, 2.8, 29.0)],
+            "bounds": [(33.0, 38.0), (2.0, 5.5), (26.0, 31.0)],
+            "gt_initial_state": [1.0, 1.0, 1.0]
+        },
+        {
+            "name": "Lu",
+            "ground_truth_func": lu_system,
+            "solver_params": None,
+            "base_params": [(36, 3, 20), (35.5, 2.5, 19.5)],
+            "bounds": [(32.0, 39.0), (1.5, 5.5), (15.0, 24.5)],
+            "gt_initial_state": [1.0, 1.0, 1.0]
+        },
         {
             "name": "Distorded Lorenz System",
             "ground_truth_func": disturbed_lorenz_system,
@@ -117,7 +114,7 @@ def main():
             base_solution = solve_ivp(ground_truth_func, t_span, initial_state, args=base_params, t_eval=t_eval)
 
             fig = plot_3d_solution(base_solution, title=f"{system['name']} - 3D Phase Space")
-            save_plot(fig, "Surrogated_"+system['name'], (0, 90), 0, "3D_Phase_Space")
+            save_plot(fig, system['name'], (0, 90), 0, "3D_Phase_Space")
             for t_sample_span, sampling_points in sample_params:
                 print(f"Sampling for t_sample_span = {t_sample_span}, sampling_points = {sampling_points}")
 
@@ -129,7 +126,7 @@ def main():
                 # Plot sampled data
                 fig = plot_dynamic_variation(base_solution.t, base_solution.y, samples=sampled_points,
                                        title=f"{system['name']} - Sampled Dynamics for {t_sample_span[0]}-{t_sample_span[1]}")
-                save_plot(fig, "Surrogated_"+system['name'], t_sample_span, sampling_points, "Sampled_Dynamics")
+                save_plot(fig, system['name'], t_sample_span, sampling_points, "Sampled_Dynamics")
                 # Fit model to sampled data
                 fitted_params = assimilate_data(ground_truth_func, initial_state, sampled_data[0], t_sample_span,
                                                 system['bounds'], system.get('solver_params'))
@@ -137,23 +134,22 @@ def main():
 
                 # Predict forward and backward
 
+                # to_train_func = system.get('surrogate_func', ground_truth_func)
+
                 fitted_solution = solve_ivp(ground_truth_func, t_span, initial_state, args=fitted_params, t_eval=t_eval)
+                rms_values = calculate_rms_over_time(base_solution.y, fitted_solution.y)
 
-                to_train_func = system.get('surrogate_func', ground_truth_func)
-                surrogated_params = assimilate_data(to_train_func, initial_state[:3], sampled_data[0], t_sample_span,
-                                                system['bounds'][:3], system.get('solver_params'))
-
-                surrogated_solution = solve_ivp(to_train_func, t_span, initial_state[:3], args=surrogated_params, t_eval=t_eval)
-                base_rms_values = calculate_rms_over_time(base_solution.y, surrogated_solution.y)
-                fitted_rms_values = calculate_rms_over_time(fitted_solution.y, surrogated_solution.y)
-
-                fig = plot_rms_over_time(t_eval, base_rms_values, title=f"{system['name']} - Base RMS Over Time")
-                save_plot(fig, "Surrogated_"+system['name'], t_sample_span, sampling_points, "RMS_Over_Time")
-                fig = plot_rms_over_time(t_eval, fitted_rms_values, title=f"{system['name']} - Fitted RMS Over Time")
-                save_plot(fig,"Surrogated_"+ system['name'], t_sample_span, sampling_points, "RMS_Over_Time2")
-
-                fig = plot_3d_solution(surrogated_solution, title=f"{system['name']} - Surrogated 3D Phase Space", colors="orange")
-                save_plot(fig, "Surrogated_"+system['name'], t_sample_span, sampling_points, "Surrogated_3D_Phase_Space")
+                # Plot RMS over time
+                fig = plt.figure(figsize=(10, 6))
+                plt.plot(t_eval, rms_values, label="RMS Error", color="red")
+                plt.title(f"{system['name']} - RMS Over Time")
+                plt.xlabel("Time")
+                plt.ylabel("RMS Error")
+                plt.legend()
+                plt.grid()
+                plt.show()
+                save_plot(fig, system['name'], t_sample_span, sampling_points, "RMS_Over_Time")
+                # Plot fitted model
 
 
 if __name__ == "__main__":
