@@ -45,6 +45,17 @@ def plot_trajectories(t, true_solution, fitted_solution, title="Comparison of Tr
     plt.show()
     return fig
 
+def plot_rms_over_time(t_eval, rms_values, title="RMS Over Time"):
+    fig = plt.figure(figsize=(10, 6))
+    plt.plot(t_eval, rms_values, label="RMS Error", color="red")
+    plt.title(title)
+    plt.xlabel("Time")
+    plt.ylabel("RMS Error")
+    plt.legend()
+    plt.grid()
+    plt.show()
+    return fig
+
 def save_plot(fig, system_name, t_sample_span, sampling_points, plot_type):
     # Tworzenie odpowiedniego folderu
     folder_name = f"{system_name}/t{t_sample_span[0]}-{t_sample_span[1]}_points{sampling_points}"
