@@ -56,14 +56,14 @@ def assimilate_data(system_func, initial_state, observed_data, t_span, bounds, s
 
 def main():
     systems = [
-        {
-            "name": "Lorenz",
-            "ground_truth_func": lorenz_system,
-            "solver_params": None,
-            "base_params": [(10.0, 8.0 / 3.0, 28.0), (9.9, 2.5, 27.5)],
-            "bounds": [(5, 20), (0.5, 5), (20, 50)],
-            "gt_initial_state": [1.0, 1.0, 1.0]
-        },
+        # {
+        #     "name": "Lorenz",
+        #     "ground_truth_func": lorenz_system,
+        #     "solver_params": None,
+        #     "base_params": [(10.0, 8.0 / 3.0, 28.0), (9.9, 2.5, 27.5)],
+        #     "bounds": [(5, 20), (0.5, 5), (20, 50)],
+        #     "gt_initial_state": [1.0, 1.0, 1.0]
+        # },
         # {
         #     "name": "Yang",
         #     "ground_truth_func": yang_system,
@@ -88,15 +88,15 @@ def main():
         #     "bounds": [(32.0, 39.0), (1.5, 5.5), (15.0, 24.5)],
         #     "gt_initial_state": [1.0, 1.0, 1.0]
         # },
-        # {
-        #     "name": "Distorded Lorenz System",
-        #     "ground_truth_func": disturbed_lorenz_system,
-        #     "surrogate_func": lorenz_system,
-        #     "base_params": [(10.0, 8. / 3., 28.0, 1.0, 5.0, 1.0), (10.0, 8. / 3., 28.0, 1.0, 5.0, 1.0)],
-        #     "bounds": [(5, 15), (20, 40.0), (0.5, 5), (0.5, 5), (3, 10), (0.5, 5)],
-        #     "gt_initial_state": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
-        #     "surrogate_state_len": 3,
-        # }
+        {
+            "name": "Distorded Lorenz System",
+            "ground_truth_func": disturbed_lorenz_system,
+            "surrogate_func": lorenz_system,
+            "base_params": [(10.0, 8. / 3., 28.0, 1.0, 5.0, 1.0), (10.0, 8. / 3., 28.0, 1.0, 5.0, 1.0)],
+            "bounds": [(5, 15), (20, 40.0), (0.5, 5), (0.5, 5), (3, 10), (0.5, 5)],
+            "gt_initial_state": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+            "surrogate_state_len": 3,
+        }
     ]
 
     sample_params = [
@@ -118,15 +118,15 @@ def main():
 
         fig = plot_3d_solution(base_solution, title=f"{system['name']} - 3D Phase Space")
         save_plot(fig, "Surrogated_" + system['name'], (0, 90), 0, "3D_Phase_Space")
-        for std_dev in [0.5, 2, 5]:
+        for std_dev in [10]:
             for t_sample_span, sampling_points in sample_params:
                 print(f"Sampling for t_sample_span = {t_sample_span}, sampling_points = {sampling_points}, std_dev = {std_dev}")
 
                 t_sample = np.linspace(t_sample_span[0], t_sample_span[1], sampling_points)
                 sampled_data = [np.interp(t_sample, base_solution.t, base_solution.y[i]) for i in
                                 range(base_solution.y.shape[0])]
-                mean = 0
-                noisy_sampled_data = [data + np.random.normal(mean, std_dev, size=len(data))
+
+                noisy_sampled_data = [data + np.random.normal(0, std_dev, size=len(data))
                                       for data in sampled_data]
                 sampled_points = [(t_sample, noisy_sampled_data[i]) for i in range(len(noisy_sampled_data))]
 
@@ -153,10 +153,11 @@ def main():
 
                 surrogated_solution = solve_ivp(to_train_func, t_span, initial_state[:3], args=surrogated_params,
                                                 t_eval=t_eval)
+                print(f"Surrogated system fitted parameters: {surrogated_params}")
 
-                print("RMS - base/fitted: ",rms_error(base_solution.y, fitted_solution.y))
-                print("RMS - base/surrogated: ",rms_error(base_solution.y, surrogated_solution.y))
-                print("RMS - fitted/surrogated: ",rms_error(fitted_solution.y, surrogated_solution.y))
+                print("RMS - base/fitted: ",rms_error(base_solution.y[:3, :], fitted_solution.y[:3, :]))
+                print("RMS - base/surrogated: ",rms_error(base_solution.y[:3, :], surrogated_solution.y[:3, :]))
+                print("RMS - fitted/surrogated: ",rms_error(fitted_solution.y[:3, :], surrogated_solution.y[:3, :]))
 
 
 if __name__ == "__main__":
