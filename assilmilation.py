@@ -143,6 +143,9 @@ def main():
                 # Predict forward and backward
 
                 fitted_solution = solve_ivp(ground_truth_func, t_span, initial_state, args=fitted_params, t_eval=t_eval)
+                fig = plot_dynamic_variation(fitted_solution.t, fitted_solution.y, samples=sampled_points,
+                                             title=f"{system['name']} - Fitted Sampled Dynamics for {t_sample_span[0]}-{t_sample_span[1]}")
+                save_plot(fig, "Fitted_surrogated_" + system['name'], t_sample_span, sampling_points, "Sampled_Dynamics")
 
                 to_train_func = system.get('surrogate_func', ground_truth_func)
                 surrogated_params = assimilate_data(to_train_func, initial_state[:3], sampled_data[:3], t_sample_span,
@@ -150,13 +153,10 @@ def main():
 
                 surrogated_solution = solve_ivp(to_train_func, t_span, initial_state[:3], args=surrogated_params,
                                                 t_eval=t_eval)
-                base_rms_values = calculate_rms_over_time(base_solution.y, surrogated_solution.y)
-                fitted_rms_values = calculate_rms_over_time(fitted_solution.y, surrogated_solution.y)
 
-                fig = plot_rms_over_time(t_eval, base_rms_values, title=f"{system['name']} - Base RMS Over Time")
-                save_plot(fig, "Surrogated_" + system['name'], t_sample_span, sampling_points, "RMS_Over_Time")
-                fig = plot_rms_over_time(t_eval, fitted_rms_values, title=f"{system['name']} - Fitted RMS Over Time")
-                save_plot(fig, "Surrogated_" + system['name'], t_sample_span, sampling_points, "RMS_Over_Time2")
+                print("RMS - base/fitted: ",rms_error(base_solution.y, fitted_solution.y))
+                print("RMS - base/surrogated: ",rms_error(base_solution.y, surrogated_solution.y))
+                print("RMS - fitted/surrogated: ",rms_error(fitted_solution.y, surrogated_solution.y))
 
 
 if __name__ == "__main__":
