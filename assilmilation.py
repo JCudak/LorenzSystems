@@ -100,6 +100,7 @@ def main():
     ]
 
     sample_params = [
+        # ((30, 40), 2),
         ((30, 40), 5),
         ((30, 40), 10),
         ((30, 40), 40)
@@ -118,17 +119,22 @@ def main():
 
         fig = plot_3d_solution(base_solution, title=f"{system['name']} - 3D Phase Space")
         save_plot(fig, "Surrogated_" + system['name'], (0, 90), 0, "3D_Phase_Space")
-        for std_dev in [10]:
+        for std_dev in [0.5, 2, 5]:
             for t_sample_span, sampling_points in sample_params:
                 print(f"Sampling for t_sample_span = {t_sample_span}, sampling_points = {sampling_points}, std_dev = {std_dev}")
 
                 t_sample = np.linspace(t_sample_span[0], t_sample_span[1], sampling_points)
+                # print("t_sample", t_sample)
+                # print("base sol", base_solution.t.shape, base_solution.y.shape)
                 sampled_data = [np.interp(t_sample, base_solution.t, base_solution.y[i]) for i in
                                 range(base_solution.y.shape[0])]
 
+                # print("lol0", sampled_data)
                 noisy_sampled_data = [data + np.random.normal(0, std_dev, size=len(data))
                                       for data in sampled_data]
+                # print("lol1", noisy_sampled_data)
                 sampled_points = [(t_sample, noisy_sampled_data[i]) for i in range(len(noisy_sampled_data))]
+                # print("lol", sampled_data)
 
                 # Plot sampled data
                 fig = plot_dynamic_variation(base_solution.t, base_solution.y, samples=sampled_points,
@@ -136,7 +142,7 @@ def main():
                 save_plot(fig, "Surrogated_" + system['name'], t_sample_span, sampling_points, "Sampled_Dynamics")
                 # Fit model to sampled data
 
-                fitted_params = assimilate_data(ground_truth_func, initial_state, sampled_data, t_sample_span,
+                fitted_params = assimilate_data(ground_truth_func, initial_state, noisy_sampled_data, t_sample_span,
                                                 system['bounds'], system.get('solver_params'))
                 print(f"Fitted Parameters for {system['name']}: {fitted_params}")
 
@@ -148,7 +154,7 @@ def main():
                 save_plot(fig, "Fitted_surrogated_" + system['name'], t_sample_span, sampling_points, "Sampled_Dynamics")
 
                 to_train_func = system.get('surrogate_func', ground_truth_func)
-                surrogated_params = assimilate_data(to_train_func, initial_state[:3], sampled_data[:3], t_sample_span,
+                surrogated_params = assimilate_data(to_train_func, initial_state[:3], noisy_sampled_data[:3], t_sample_span,
                                                     system['bounds'][:3], system.get('solver_params'))
 
                 surrogated_solution = solve_ivp(to_train_func, t_span, initial_state[:3], args=surrogated_params,
