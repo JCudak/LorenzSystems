@@ -100,9 +100,9 @@ def main():
     ]
 
     sample_params = [
-        ((30, 40), 10),
-        ((30, 50), 20),
-        ((30, 60), 30)
+        ((30, 40), 5),
+        ((30, 50), 10),
+        ((30, 60), 40)
     ]
 
     for system in systems:
@@ -120,7 +120,7 @@ def main():
         save_plot(fig, "Surrogated_" + system['name'], (0, 90), 0, "3D_Phase_Space")
         for std_dev in [0.5, 2, 5]:
             for t_sample_span, sampling_points in sample_params:
-                print(f"Sampling for t_sample_span = {t_sample_span}, sampling_points = {sampling_points}")
+                print(f"Sampling for t_sample_span = {t_sample_span}, sampling_points = {sampling_points}, std_dev = {std_dev}")
 
                 t_sample = np.linspace(t_sample_span[0], t_sample_span[1], sampling_points)
                 sampled_data = [np.interp(t_sample, base_solution.t, base_solution.y[i]) for i in
