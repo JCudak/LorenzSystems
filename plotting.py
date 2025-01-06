@@ -3,13 +3,15 @@ import os
 import matplotlib.pyplot as plt
 
 
-def plot_dynamic_variation(time, variables, samples=None, title="Dynamic Variation", xlabel="Time", ylabel="Values"):
+def plot_dynamic_variation(time, variables, samples=None, title="Dynamic Variation", xlabel="Time", ylabel="Values", t_span = (0, 90)):
     fig = plt.figure(figsize=(10, 6))
     for i, var in enumerate(variables):
         plt.plot(time, var, label=f"x{i+1}")
+        break
     if samples is not None:
         for i, sampled_points in enumerate(samples):
             plt.scatter(sampled_points[0], sampled_points[1], label=f"Sampled x{i+1}", marker='o')
+            break
     plt.title(title)
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
