@@ -56,14 +56,14 @@ def assimilate_data(system_func, initial_state, observed_data, t_span, bounds, s
 
 def main():
     systems = [
-        {
-            "name": "Lorenz",
-            "ground_truth_func": lorenz_system,
-            "solver_params": None,
-            "base_params": [(10.0, 8.0 / 3.0, 28.0), (9.9, 2.5, 27.5)],
-            "bounds": [(5, 20), (0.5, 5), (20, 50)],
-            "gt_initial_state": [1.0, 1.0, 1.0]
-        },
+        # {
+        #     "name": "Lorenz",
+        #     "ground_truth_func": lorenz_system,
+        #     "solver_params": None,
+        #     "base_params": [(10.0, 8.0 / 3.0, 28.0), (9.9, 2.5, 27.5)],
+        #     "bounds": [(5, 20), (0.5, 5), (20, 50)],
+        #     "gt_initial_state": [1.0, 1.0, 1.0]
+        # },
         # {
         #     "name": "Yang",
         #     "ground_truth_func": yang_system,
@@ -88,15 +88,15 @@ def main():
         #     "bounds": [(32.0, 39.0), (1.5, 5.5), (15.0, 24.5)],
         #     "gt_initial_state": [1.0, 1.0, 1.0]
         # },
-        # {
-        #     "name": "Distorded Lorenz System",
-        #     "ground_truth_func": disturbed_lorenz_system,
-        #     "surrogate_func": lorenz_system,
-        #     "base_params": [(10.0, 8. / 3., 28.0, 1.0, 5.0, 1.0), (10.0, 8. / 3., 28.0, 1.0, 5.0, 1.0)],
-        #     "bounds": [(5, 15), (20, 40.0), (0.5, 5), (0.5, 5), (3, 10), (0.5, 5)],
-        #     "gt_initial_state": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
-        #     "surrogate_state_len": 3,
-        # }
+        {
+            "name": "Distorted Lorenz System",
+            "ground_truth_func": disturbed_lorenz_system,
+            "surrogate_func": lorenz_system,
+            "base_params": [(10.0, 8. / 3., 28.0, 1.0, 5.0, 1.0), (10.0, 8. / 3., 28.0, 1.0, 5.0, 1.0)],
+            "bounds": [(5, 15), (0.5, 5), (20, 40.0), (0.5, 5), (3, 10), (0.5, 5)],
+            "gt_initial_state": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+            "surrogate_state_len": 3,
+        }
     ]
 
     sample_params = [
@@ -136,7 +136,7 @@ def main():
                 save_plot(fig, "Surrogated_" + system['name'], t_sample_span, sampling_points, "Sampled_Dynamics")
                 # Fit model to sampled data
 
-                fitted_params = assimilate_data(ground_truth_func, initial_state, sampled_data, t_sample_span,
+                fitted_params = assimilate_data(ground_truth_func, initial_state, noisy_sampled_data, t_sample_span,
                                                 system['bounds'], system.get('solver_params'))
                 print(f"Fitted Parameters for {system['name']}: {fitted_params}")
 
@@ -148,15 +148,20 @@ def main():
                 save_plot(fig, "Fitted_surrogated_" + system['name'], t_sample_span, sampling_points, "Sampled_Dynamics")
 
                 to_train_func = system.get('surrogate_func', ground_truth_func)
-                surrogated_params = assimilate_data(to_train_func, initial_state[:3], sampled_data[:3], t_sample_span,
+                surrogated_params = assimilate_data(to_train_func, initial_state[:3], noisy_sampled_data[:3], t_sample_span,
                                                     system['bounds'][:3], system.get('solver_params'))
 
                 surrogated_solution = solve_ivp(to_train_func, t_span, initial_state[:3], args=surrogated_params,
                                                 t_eval=t_eval)
 
-                print("RMS - base/fitted: ",rms_error(base_solution.y, fitted_solution.y))
-                print("RMS - base/surrogated: ",rms_error(base_solution.y, surrogated_solution.y))
-                print("RMS - fitted/surrogated: ",rms_error(fitted_solution.y, surrogated_solution.y))
+                fig = plot_dynamic_variation(surrogated_solution.t, surrogated_solution.y, samples=sampled_points,
+                                             title=f"{system['name']} - surrogated Sampled Dynamics for {t_sample_span[0]}-{t_sample_span[1]}")
+                save_plot(fig, "Surrogated_2_" + system['name'], t_sample_span, sampling_points,
+                          "Sampled_Dynamics")
+
+                print("RMS - base/fitted: ",rms_error(base_solution.y[:3], fitted_solution.y[:3]))
+                print("RMS - base/surrogated: ",rms_error(base_solution.y[:3], surrogated_solution.y[:3]))
+                print("RMS - fitted/surrogated: ",rms_error(fitted_solution.y[:3], surrogated_solution.y[:3]))
 
 
 if __name__ == "__main__":
