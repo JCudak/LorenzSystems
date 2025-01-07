@@ -89,11 +89,11 @@ def main():
         #     "gt_initial_state": [1.0, 1.0, 1.0]
         # },
         {
-            "name": "Distorded Lorenz System",
+            "name": "Distorted Lorenz System",
             "ground_truth_func": disturbed_lorenz_system,
             "surrogate_func": lorenz_system,
             "base_params": [(10.0, 8. / 3., 28.0, 1.0, 5.0, 1.0), (10.0, 8. / 3., 28.0, 1.0, 5.0, 1.0)],
-            "bounds": [(5, 15), (20, 40.0), (0.5, 5), (0.5, 5), (3, 10), (0.5, 5)],
+            "bounds": [(5, 15), (0.5, 5), (20, 40.0), (0.5, 5), (3, 10), (0.5, 5)],
             "gt_initial_state": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
             "surrogate_state_len": 3,
         }
@@ -161,9 +161,15 @@ def main():
                                                 t_eval=t_eval)
                 print(f"Surrogated system fitted parameters: {surrogated_params}")
 
-                print("RMS - base/fitted: ",rms_error(base_solution.y[:3, :], fitted_solution.y[:3, :]))
-                print("RMS - base/surrogated: ",rms_error(base_solution.y[:3, :], surrogated_solution.y[:3, :]))
-                print("RMS - fitted/surrogated: ",rms_error(fitted_solution.y[:3, :], surrogated_solution.y[:3, :]))
+                fig = plot_dynamic_variation(surrogated_solution.t, surrogated_solution.y, samples=sampled_points,
+                                             title=f"{system['name']} - surrogated Sampled Dynamics for {t_sample_span[0]}-{t_sample_span[1]}")
+                save_plot(fig, "Surrogated_2_" + system['name'], t_sample_span, sampling_points,
+                          "Sampled_Dynamics")
+
+                print("RMS - base/fitted: ",rms_error(base_solution.y[:3], fitted_solution.y[:3]))
+                print("RMS - base/surrogated: ",rms_error(base_solution.y[:3], surrogated_solution.y[:3]))
+                print("RMS - fitted/surrogated: ",rms_error(fitted_solution.y[:3], surrogated_solution.y[:3]))
+
 
 
 if __name__ == "__main__":
